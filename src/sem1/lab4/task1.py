@@ -8,10 +8,7 @@ class Film:
         self.name = name
         self.viving = viving
     def __str__(self):
-        self.
-
-
-
+        return self.name
 
 class Library:
     def __init__(self):
@@ -70,7 +67,7 @@ class Library:
             print(film)
 
 
-film_path = Path("film.txt")
+film_path = Path("history.txt")
 history_path = Path("history.txt")
 libr = Library()
 
