@@ -2,8 +2,6 @@ import pathlib
 import typing as tp
 import random
 
-from src.sem2.lab3.lab3 import stop_proces
-
 T = tp.TypeVar("T")
 
 def read_sudoku(path: tp.Union[str, pathlib.Path]) -> tp.List[tp.List[str]]:
