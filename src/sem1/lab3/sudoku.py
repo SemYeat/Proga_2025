@@ -1,8 +1,10 @@
 import pathlib
 import typing as tp
+import random
+
+from src.sem2.lab3.lab3 import stop_proces
 
 T = tp.TypeVar("T")
-
 
 def read_sudoku(path: tp.Union[str, pathlib.Path]) -> tp.List[tp.List[str]]:
     """ Прочитать Судоку из указанного файла """
@@ -11,12 +13,10 @@ def read_sudoku(path: tp.Union[str, pathlib.Path]) -> tp.List[tp.List[str]]:
         puzzle = f.read()
     return create_grid(puzzle)
 
-
 def create_grid(puzzle: str) -> tp.List[tp.List[str]]:
     digits = [c for c in puzzle if c in "123456789."]
     grid = group(digits, 9)
     return grid
-
 
 def display(grid: tp.List[tp.List[str]]) -> None:
     """Вывод Судоку """
@@ -32,7 +32,6 @@ def display(grid: tp.List[tp.List[str]]) -> None:
             print(line)
     print()
 
-
 def group(values: tp.List[T], n: int) -> tp.List[tp.List[T]]:
     """
     Сгруппировать значения values в список, состоящий из списков по n элементов
@@ -41,7 +40,10 @@ def group(values: tp.List[T], n: int) -> tp.List[tp.List[T]]:
     >>> group([1,2,3,4,5,6,7,8,9], 3)
     [[1, 2, 3], [4, 5, 6], [7, 8, 9]]
     """
-    pass
+    res = []
+    for i in range(0, len(values), n):
+        res.append(values[i : i + n])
+    return res
 
 
 def get_row(grid: tp.List[tp.List[str]], pos: tp.Tuple[int, int]) -> tp.List[str]:
@@ -53,7 +55,8 @@ def get_row(grid: tp.List[tp.List[str]], pos: tp.Tuple[int, int]) -> tp.List[str
     >>> get_row([['1', '2', '3'], ['4', '5', '6'], ['.', '8', '9']], (2, 0))
     ['.', '8', '9']
     """
-    pass
+    row,_ = pos
+    return grid[row][:]
 
 
 def get_col(grid: tp.List[tp.List[str]], pos: tp.Tuple[int, int]) -> tp.List[str]:
@@ -65,7 +68,8 @@ def get_col(grid: tp.List[tp.List[str]], pos: tp.Tuple[int, int]) -> tp.List[str
     >>> get_col([['1', '2', '3'], ['4', '5', '6'], ['.', '8', '9']], (0, 2))
     ['3', '6', '9']
     """
-    pass
+    _, col = pos
+    return [grid[i][col] for i in range(len(grid))]
 
 
 def get_block(grid: tp.List[tp.List[str]], pos: tp.Tuple[int, int]) -> tp.List[str]:
@@ -78,7 +82,14 @@ def get_block(grid: tp.List[tp.List[str]], pos: tp.Tuple[int, int]) -> tp.List[s
     >>> get_block(grid, (8, 8))
     ['2', '8', '.', '.', '.', '5', '.', '7', '9']
     """
-    pass
+    row, col = pos
+    stop_row = (row//3)*3
+    stop_col = (col//3)*3
+    block = []
+    for i in range(3):
+        for j in range(3):
+            block.append(grid[start_row + i][start_col + j])
+    return block
 
 
 def find_empty_positions(grid: tp.List[tp.List[str]]) -> tp.Optional[tp.Tuple[int, int]]:
@@ -90,7 +101,11 @@ def find_empty_positions(grid: tp.List[tp.List[str]]) -> tp.Optional[tp.Tuple[in
     >>> find_empty_positions([['1', '2', '3'], ['4', '5', '6'], ['.', '8', '9']])
     (2, 0)
     """
-    pass
+    for i in range(len(grid)):
+        for j in range(len(grid[0])):
+            if grid[i][j] == '.':
+                return (i, j)
+    return None
 
 
 def find_possible_values(grid: tp.List[tp.List[str]], pos: tp.Tuple[int, int]) -> tp.Set[str]:
@@ -103,8 +118,13 @@ def find_possible_values(grid: tp.List[tp.List[str]], pos: tp.Tuple[int, int]) -
     >>> values == {'2', '5', '9'}
     True
     """
-    pass
+    row_vals = set(get_row(grid, pos))
+    col_vals = set(get_col(grid, pos))
+    block_vals = set(get_block(grid, pos))
 
+    used_vals = row_vals | col_vals | block_vals | block_vals
+    all_vals = set("123456789")
+    return  all_vals - used_vals
 
 def solve(grid: tp.List[tp.List[str]]) -> tp.Optional[tp.List[tp.List[str]]]:
     """ Решение пазла, заданного в grid """
@@ -118,13 +138,41 @@ def solve(grid: tp.List[tp.List[str]]) -> tp.Optional[tp.List[tp.List[str]]]:
     >>> solve(grid)
     [['5', '3', '4', '6', '7', '8', '9', '1', '2'], ['6', '7', '2', '1', '9', '5', '3', '4', '8'], ['1', '9', '8', '3', '4', '2', '5', '6', '7'], ['8', '5', '9', '7', '6', '1', '4', '2', '3'], ['4', '2', '6', '8', '5', '3', '7', '9', '1'], ['7', '1', '3', '9', '2', '4', '8', '5', '6'], ['9', '6', '1', '5', '3', '7', '2', '8', '4'], ['2', '8', '7', '4', '1', '9', '6', '3', '5'], ['3', '4', '5', '2', '8', '6', '1', '7', '9']]
     """
-    pass
+    empty_pos = find_empty_positions(grid)
+    if empty_pos is None:
+        return grid
+    row, col = empty_pos
+    possible_vals = find_possible_values(grid, empty_pos)
+    for val in possible_vals:
+        grid[row][col] = val
+        result = solve(grid)
+        if result is not None:
+            return result
+        grid[row][col] = "."
+    return None
 
 
 def check_solution(solution: tp.List[tp.List[str]]) -> bool:
     """ Если решение solution верно, то вернуть True, в противном случае False """
     # TODO: Add doctests with bad puzzles
-    pass
+    for row in solution:
+        if set(row) != set("123456789"):
+            return False
+
+    for col in range(9):
+        column = [solution[row][col] for row in range(9)]
+        if set(column) != set("123456789"):
+            return False
+
+    for block_row in range(0, 9, 3):
+        for block_col in range(0, 9, 3):
+            block = []
+            for i in range(3):
+                for j in range(3):
+                    block.append(solution[block_row + i][block_col + j])
+            if set(block) != set("123456789"):
+                return False
+    return True
 
 
 def generate_sudoku(N: int) -> tp.List[tp.List[str]]:
@@ -148,7 +196,29 @@ def generate_sudoku(N: int) -> tp.List[tp.List[str]]:
     >>> check_solution(solution)
     True
     """
-    pass
+    solved_grid = [["." for _ in range(9)] for _ in range(9)]
+    for block in range(3):
+        nums = list("123456789")
+        random.shuffle(nums)
+        for i in range(3):
+            for j in range(3):
+                row = block * 3 + i
+                col = block * 3 + j
+                solved_grid[row][col] = nums[i*3+j]
+
+    solved_grid = solve(solved_grid)
+    if solved_grid is None:
+        return [["." for _ in range(9)] for _ in range(9)]
+
+    N = max(0, min(81, N))
+    cells_to_remove = 81 - N
+    positions = [(i, j) for i in range(9) for j in range(9)]
+    random.shuffle(positions)
+    for i in range(cells_to_remove):
+        if i < len(positions):
+            row, col = positions[i]
+            solved_grid[row][col] = "."
+    return solved_grid
 
 
 if __name__ == "__main__":
